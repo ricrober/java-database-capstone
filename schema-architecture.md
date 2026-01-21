@@ -1,0 +1,14 @@
+This Spring Boot application uses both MVC and REST controllers. Thymeleaf templates are used for the Admin and Doctor dashboards, while REST APIs serve all other modules. The application interacts with two databases—MySQL (for patient, doctor, appointment, and admin data) and MongoDB (for prescriptions). All controllers route requests through a common service layer, which in turn delegates to the appropriate repositories. MySQL uses JPA entities while MongoDB uses document models.
+1. The user interface layer. The system supports multiple user types and interaction patterns. Users can access the application through Thymeleaf-based web dashboards such as Admin Dashboard and Doctor Dashboard. These are traditional HTML pages rendered on the server and delivered to the browser.
+
+2. The controller layer. When a user interacts with the application, for example, clicking a button or submitting a form, the request is routed to a backend controller based on the URL path and the HTTP method. Requests for server-rendered views are handled by Thymeleaf Controllers, which return .html templates that will be filed with dynamic data and rendered in the browser.
+
+3. The service layer. All controllers delegate logic to the service layer, which acts as the heart of the backend system. This layer applies business rules and validations, coordinates workflows across multiple entities, for instance, checking doctor availability before scheduling an appointment, and ensures a clean separation between controller logic and data access. 
+
+4. The repository layer. The service layer communicates with the repository layer to perform data access operations. This layer includes two types of repositories. MySQL repositories, which use Spring Data JPA to manage structured, relational data like patients, doctors and appointments, and admin records.
+
+5. The database access. Each repository interfaces directly with the underlying database engine. MySQL stores all core entities that benefit from a normalized relational schema and constraints such as users, roles, and appointments. MongoDB stores flexible and nested data structures, such as prescriptions, which may vary in format and allow for rapid schema evolution.
+
+6. Model binding. Once data is retrieved from the database, it is mapped into Java model classes that the application can work with. This process is known as model binding. In the case of MySQL, data is converted into JPA entities, which represent rows in relational tables and are annotated with @Entity. For MongoDB, data is loaded into document objects, typically annotated with @Document, which map to BSON or JSON structures and collections.
+
+7. The application models in use. The bound models are used in the response layer. 
