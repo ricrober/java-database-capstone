@@ -45,6 +45,8 @@ public class Doctor {
     @ElementCollection
     private List<String> availableTimes;
 
+    public Doctor() {}
+
     public Doctor(Long id,
             @NotNull(message = "Doctor's name cannot be null") @Size(min = 3, max = 100, message = "Doctor's name should be between 3 and 100 characters") String name,
             @NotNull(message = "Specialty cannot be null") @Size(min = 3, max = 50, message = "Specialty should be between 3 and 50 characters") String specialty,
