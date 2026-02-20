@@ -5,7 +5,7 @@
 ### Table: doctors
 - id: INT, Primary Key, Auto Increment
 - name: VARCHAR(100), Not Null
-- ### Table: clinic_locations
+### Table: clinic_locations
 - id: INT, Primary Key, Auto Increment
 - address: VARCHAR(100), Not Null
 ### Table: appointments
