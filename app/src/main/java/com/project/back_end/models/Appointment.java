@@ -40,12 +40,12 @@ public class Appointment {
     }
 
     @Transient
-    private LocalDate getAppointmentDate() {
+    public LocalDate getAppointmentDate() {
         return appointmentTime != null ? appointmentTime.toLocalDate() : null;
     }
 
     @Transient
-    private LocalTime getAppointmentTimeOnly() {
+    public LocalTime getAppointmentTimeOnly() {
         return appointmentTime != null ? appointmentTime.toLocalTime() : null;
     }
 
