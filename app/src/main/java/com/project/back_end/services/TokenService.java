@@ -24,6 +24,11 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class TokenService {
 
+    /**
+     * The raw secret string used for signing and verifying JWTs.
+     * This value is injected from the application properties file 
+     * (e.g., application.properties or application.yml) using the key 'jwt.secret'.
+     */
     @Value("${jwt.secret}")
     private String secret;
 
@@ -38,16 +43,19 @@ public class TokenService {
     }
 
     /**
-     * Converts the configured secret string into a cryptographic SecretKey.
-     * @return A HMAC-SHA Key used for signing and verifying tokens.
+     * Converts the raw 'secret' string into a HMAC-SHA SecretKey.
+     * This method utilizes the 'secret' field to ensure all tokens are 
+     * cryptographically signed and verified using a consistent key.
+     * * @return A SecretKey derived from the 'secret' field.
      */
     private SecretKey getSigningKey() {
+        // Encodes the secret string into bytes and generates the HMAC key
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
     /**
      * Generates a new JWT for a specific user email.
-     * The token is valid for 7 days from the issued date.
+     * The token is signed using the key derived from the 'secret' field.
      * * @param email The subject (identifier) to be encoded in the token.
      * @return A compact URL-safe JWT string.
      */
@@ -56,26 +64,25 @@ public class TokenService {
                 .subject(email)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7))
-                .signWith(getSigningKey())
+                .signWith(getSigningKey()) // Uses the secret-based key here
                 .compact();
     }    
 
     /**
      * Extracts the email (subject) from a provided JWT.
-     * Handles potential parsing exceptions gracefully to ensure system stability.
+     * Verifies the token's signature using the secret-based key before extraction.
      * * @param token The JWT string to parse.
-     * @return The extracted email if valid, or null if the token is invalid or expired.
+     * @return The extracted email if valid, or null if invalid/expired.
      */
     public String extractEmail(String token) {
         try {
             return Jwts.parser()
-                    .verifyWith(getSigningKey())
+                    .verifyWith(getSigningKey()) // Verifies against the configured secret
                     .build()
                     .parseSignedClaims(token)
                     .getPayload()
                     .getSubject();
         } catch (JwtException | IllegalArgumentException e) {
-            // Log this error in a real production environment
             return null;
         }
     }
@@ -83,9 +90,6 @@ public class TokenService {
     /**
      * Validates a token by checking its integrity and confirming the user 
      * exists in the database based on their role.
-     * * @param token The JWT string to validate.
-     * @param user The role type ("admin", "doctor", or "patient").
-     * @return true if the token is valid and the user exists; false otherwise.
      */
     public boolean validateToken(String token, String user) {
         try {
