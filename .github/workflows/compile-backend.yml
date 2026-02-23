@@ -1,5 +1,6 @@
 name: Compile Java Backend
 
+# Triggers for CI: Runs on every push and pull request to ensure code stability.
 on: [push, pull_request]
 
 jobs:
@@ -7,27 +8,44 @@ jobs:
     runs-on: ubuntu-latest
     name: Compile Backend Code
     
+    # Explicitly defines where the backend code lives. 
+    # This ensures all 'run' commands below execute inside the /app directory.
+    defaults:
+      run:
+        working-directory: app
+
     steps:
+      # Step 1: Clone the repository into the runner.
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          # If the 'app' directory is in a specific branch or sub-repo, 
+          # you'd configure that here.
+          path: '.'
 
+      # Step 2: Set up the Java environment.
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+          # Caching speeds up builds by preserving the .m2/repository between runs.
           cache: 'maven'
 
-      # Debug step: Lists files to ensure we are in the right place
-      - name: Verify file structure
-        run: ls -R
-
-      # This ensures the wrapper has execution rights
-      - name: Grant execute permission for mvnw
-        run: chmod +x app/mvnw
-
-      # Executing from the 'app' directory
-      - name: Compile with Maven Wrapper
+      # Step 3: Validate existence of the wrapper before proceeding.
+      # This provides a clearer error message than a generic 'file not found'.
+      - name: Verify Maven Wrapper Existence
         run: |
-          cd app
-          ./mvnw clean compile
+          if [ ! -f "mvnw" ]; then
+            echo "Error: Maven Wrapper (mvnw) not found in $(pwd)"
+            exit 1
+          fi
+
+      # Step 4: Grant execution rights to the wrapper script.
+      - name: Grant execute permission for mvnw
+        run: chmod +x mvnw
+
+      # Step 5: Compile the project using the Maven Wrapper (best practice).
+      # This ensures the exact Maven version defined in .mvn/wrapper is used.
+      - name: Compile with Maven Wrapper
+        run: ./mvnw clean compile
