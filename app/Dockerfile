@@ -1,42 +1,40 @@
 # ==========================================
+# ARGUMENTS: Define versions in one place
+# ==========================================
+ARG JAVA_VERSION=17
+# We use a consistent base for both stages to ensure compatibility
+ARG BASE_IMAGE=eclipse-temurin
+
+# ==========================================
 # STAGE 1: Build Stage (The Builder)
 # ==========================================
-# This stage uses a full JDK and Maven to compile the source code.
-# We name it 'builder' to allow the next stage to grab files from it.
-FROM maven:3.9.9-eclipse-temurin-17 AS builder
+FROM maven:3.9.9-${BASE_IMAGE}-${JAVA_VERSION} AS builder
 
-# Define the working directory inside the container for build operations.
 WORKDIR /app
 
-# Copy only the pom.xml first. This allows Docker to cache the 
-# downloaded dependencies unless the pom.xml changes.
+# Cache dependencies: Copy pom.xml and run go-offline 
+# (This ensures faster builds if source code changes but dependencies don't)
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Copy the actual source code into the builder container.
 COPY src ./src
 
-# Compile the application and create the executable JAR file.
-# '-DskipTests' is used here to minimize build time in the CI/CD pipeline.
+# Build the application
 RUN mvn clean package -DskipTests
 
 # ==========================================
 # STAGE 2: Runtime Stage (The Production Image)
 # ==========================================
-# We switch to a lightweight JRE image which does not contain Maven or the JDK.
-# This makes the final image significantly smaller and more secure.
-FROM eclipse-temurin:17.0.15_6-jre
+# Using the same JAVA_VERSION and BASE_IMAGE for consistency
+FROM ${BASE_IMAGE}:${JAVA_VERSION}-jre
 
-# Set the working directory where the application will live.
 WORKDIR /app
 
-# Copy the JAR file produced in the 'builder' stage into this fresh image.
-# We rename it to 'app.jar' for simplicity in the ENTRYPOINT.
+# Copy the JAR file from the builder stage
 COPY --from=builder /app/target/back-end-0.0.1-SNAPSHOT.jar app.jar
 
-# Document that the application is expected to run on port 8080.
-# Note: This is primarily for documentation and doesn't actually 'open' the port.
+# Standard port for Spring Boot
 EXPOSE 8080
 
-# Configure the container to run as an executable.
-# Using the exec form ["executable", "param1"] is preferred over the shell form.
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
