@@ -1,51 +1,49 @@
 name: Compile Java Backend
 
-# Triggers for CI: Runs on every push and pull request to ensure code stability.
-on: [push, pull_request]
+on: 
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   compile-backend:
     runs-on: ubuntu-latest
     name: Compile Backend Code
     
-    # Explicitly defines where the backend code lives. 
-    # This ensures all 'run' commands below execute inside the /app directory.
+    # This tells every 'run' step to start inside the 'app' folder
     defaults:
       run:
-        working-directory: app
+        working-directory: ./app
 
     steps:
-      # Step 1: Clone the repository into the runner.
+      # Step 1: Checkout the code
+      # We remove 'path' here to let it clone to the root, 
+      # then we navigate into 'app' via the defaults above.
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          # If the 'app' directory is in a specific branch or sub-repo, 
-          # you'd configure that here.
-          path: '.'
 
-      # Step 2: Set up the Java environment.
+      # Step 2: Set up Java
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          # Caching speeds up builds by preserving the .m2/repository between runs.
           cache: 'maven'
+          # Providing the path to the pom.xml helps the cache find dependencies
+          cache-dependency-path: 'app/pom.xml'
 
-      # Step 3: Validate existence of the wrapper before proceeding.
-      # This provides a clearer error message than a generic 'file not found'.
-      - name: Verify Maven Wrapper Existence
+      # Step 3: Verify and Grant Permissions
+      # Combined for efficiency; ensures we are in the right spot
+      - name: Prepare Maven Wrapper
         run: |
           if [ ! -f "mvnw" ]; then
-            echo "Error: Maven Wrapper (mvnw) not found in $(pwd)"
+            echo "❌ Error: mvnw not found in $(pwd)"
+            ls -R .. # Useful for debugging if it fails
             exit 1
           fi
+          chmod +x mvnw
 
-      # Step 4: Grant execution rights to the wrapper script.
-      - name: Grant execute permission for mvnw
-        run: chmod +x mvnw
-
-      # Step 5: Compile the project using the Maven Wrapper (best practice).
-      # This ensures the exact Maven version defined in .mvn/wrapper is used.
+      # Step 4: Compile
       - name: Compile with Maven Wrapper
         run: ./mvnw clean compile
